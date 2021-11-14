@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="mul.com.sns.dao.LikesDao">
+
+
+
+<!-- like 누르기 (좋아요) -->
+<insert id="givelikes" parameterType="mul.com.sns.dto.LikesDto">
+	INSERT INTO LIKES(USERID, PHOTOID)
+	VALUES(#{userid}, #{photoid})		  
+</insert>
+
+<!-- like 취소하기 -->
+<delete id="deletelikes" parameterType="mul.com.sns.dto.LikesDto">
+	DELETE FROM LIKES
+	WHERE USERID=#{userid} AND PHOTOID=#{photoid}
+</delete>
+
+<!-- 좋아요 수 -->
+<select id="countlikes" parameterType="mul.com.sns.dto.LikesDto" resultType="mul.com.sns.dto.LikesDto">
+	SELECT COUNT(SEQ)
+	FROM LIKES
+	WHERE USERID=#{userid} AND PHOTOID=#{photoid}
+</select>
+ 
+<!-- 내가 좋아요한 모든 글 -->
+<select id="likelist" resultType="mul.com.sns.dto.LikesDto">
+	SELECT PHOTOID
+	FROM LIKES
+	WHERE USERID = #{userid}
+</select>
+
+</mapper>

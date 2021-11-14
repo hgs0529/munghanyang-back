@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="mul.com.sns.dao.FollowDao">
+
+<!-- 팔로우 -->
+<insert id="follow" parameterType="mul.com.sns.dto.FollowDto">
+	INSERT INTO FOLLOW(FOLLOW_GIVE, FOLLOW_RECV)
+	VALUES(#{follow_give}, #{follow_recv})
+</insert>
+
+<!-- 언팔로우 (팔로우 취소) -->
+<delete id="unfollow" parameterType="mul.com.sns.dto.FollowDto">
+	DELETE *
+	FROM FOLLOW
+	WHERE FOLLOW_GIVE=#{follow_give} AND FOLLOW_RECV=#{follow_recv}
+</delete>
+
+<!-- 팔로우 리스트 조회 -->
+<select id="getfollowlist" parameterType="mul.com.sns.dto.FollowDto" resultType="mul.com.sns.dto.FollowDto">
+	SELECT FOLLOW_RECV
+	FROM FOLLOW
+	WHERE FOLLOW_GIVE = (SELECT SEQ FROM 
+							(SELECT SEQ FROM USER WHERE SEQ = #{follow_give}) A)
+</select>
+
+<!-- 팔로워 리스트 조회 -->
+<select id="getfollowinglist" parameterType="mul.com.sns.dto.FollowDto" resultType="mul.com.sns.dto.FollowDto">
+	SELECT FOLLOW_GIVE
+	FROM FOLLOW
+	WHERE FOLLOW_RECV = (SELECT SEQ FROM 
+							(SELECT SEQ FROM USER WHERE SEQ = #{follow_recv}) A)
+	
+</select>
+ 
+<!-- 팔로우 유무 조회
+<select id="isfollow" resultType="Integer">
+	SELECT COUNT(*)
+	FROM FOLLOW
+	WHERE FOLLOW_GIVE = #{follow_give} AND FOLLOW_RECV #{follow_recv}
+</select>
+ -->
+ 
+</mapper>
+
+
+
+
+
+
+

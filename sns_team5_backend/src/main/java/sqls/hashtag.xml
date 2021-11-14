@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="mul.com.sns.dao.HashtagDao">
+
+<!-- 특정 게시물에 따라 해쉬태그를 불러오기 -->
+<select id="getHashtag" parameterType="Integer" resultType="mul.com.sns.dto.HashtagDto">
+	SELECT * FROM HASHTAG WHERE PHOTOID = (SELECT SEQ FROM (SELECT SEQ FROM PHOTO WHERE SEQ = #{seq})A)
+</select>
+
+<!-- 해쉬태그 추가하기 -->
+<insert id="addHashtag" parameterType="mul.com.sns.dto.HashtagDto">
+	INSERT INTO HASHTAG(USERID, PHOTOID, CONTENT)
+	VALUES( #{userid}, #{photoid}, #{content})
+</insert>
+
+<!-- 특정 해쉬태그를 포함하는 게시물들 불러오기 (파라미터 String입력? 해쉬태그Dto)-->
+<select id="getPhotoFromHashtag" parameterType="String" resultType="mul.com.sns.dto.HashtagDto">
+	SELECT * FROM PHOTO WHERE SEQ = (SELECT PHOTOID FROM (SELECT PHOTOID FROM HASHTAG WHERE CONTENT = #{content})A)
+</select>
+
+</mapper>

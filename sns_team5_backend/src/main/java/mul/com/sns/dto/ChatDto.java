@@ -1,28 +1,29 @@
 package mul.com.sns.dto;
 
 import java.io.Serializable;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.springframework.web.socket.WebSocketSession;
 
 public class ChatDto implements Serializable {
 
-	private static final long serialVersionUID = 1L;
 	private int seq;
 	private String userid;
-	private int roomid;
-	private String content;
-	private String file;
-	private String created_at;
+	private String cdate;
+	private int newmessagecount;
+	private String recentmessage;
 	
 	public ChatDto() {
 	}
 
-	public ChatDto(int seq, String userid, int roomid, String content, String file, String created_at) {
+	public ChatDto(int seq, String userid, String cdate, int newmessagecount, String recentmessage) {
 		super();
 		this.seq = seq;
 		this.userid = userid;
-		this.roomid = roomid;
-		this.content = content;
-		this.file = file;
-		this.created_at = created_at;
+		this.cdate = cdate;
+		this.newmessagecount = newmessagecount;
+		this.recentmessage = recentmessage;
 	}
 
 	public int getSeq() {
@@ -41,49 +42,36 @@ public class ChatDto implements Serializable {
 		this.userid = userid;
 	}
 
-	public int getRoomid() {
-		return roomid;
+	public String getCdate() {
+		return cdate;
 	}
 
-	public void setRoomid(int roomid) {
-		this.roomid = roomid;
+	public void setCdate(String cdate) {
+		this.cdate = cdate;
 	}
 
-	public String getContent() {
-		return content;
+	public int getNewmessagecount() {
+		return newmessagecount;
 	}
 
-	public void setContent(String content) {
-		this.content = content;
+	public void setNewmessagecount(int newmessagecount) {
+		this.newmessagecount = newmessagecount;
 	}
 
-	public String getFile() {
-		return file;
+	public String getRecentmessage() {
+		return recentmessage;
 	}
 
-	public void setFile(String file) {
-		this.file = file;
-	}
-
-	public String getCreated_at() {
-		return created_at;
-	}
-
-	public void setCreated_at(String created_at) {
-		this.created_at = created_at;
-	}
-
-	public static long getSerialversionuid() {
-		return serialVersionUID;
+	public void setRecentmessage(String recentmessage) {
+		this.recentmessage = recentmessage;
 	}
 
 	@Override
 	public String toString() {
-		return "ChatDto [seq=" + seq + ", userid=" + userid + ", roomid=" + roomid + ", content=" + content + ", file="
-				+ file + ", created_at=" + created_at + "]";
+		return "ChatDto [seq=" + seq + ", userid=" + userid + ", cdate=" + cdate + ", newmessagecount="
+				+ newmessagecount + ", recentmessage=" + recentmessage + "]";
 	}
 
-	
 	
 	
 }

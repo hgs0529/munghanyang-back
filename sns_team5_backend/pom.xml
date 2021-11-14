@@ -83,6 +83,57 @@
 		    <artifactId>stomp-websocket</artifactId>
 		    <version>2.3.3</version>
 		</dependency>
+		
+		<!-- lombok -->
+		<dependency>
+		    <groupId>org.projectlombok</groupId>
+		    <artifactId>lombok</artifactId>
+		    <version>1.18.20</version>
+		</dependency>
+		
+		<!-- guava -->
+		<dependency>
+		    <groupId>com.google.guava</groupId>
+		    <artifactId>guava</artifactId>
+		    <version>30.1.1-jre</version>
+		</dependency>
+		
+		<!-- Spring Security & JWT(JSON Web Token) -->
+		<dependency>
+		   <groupId>org.springframework.boot</groupId>
+		   <artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+        
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt</artifactId>
+            <version>0.9.1</version>
+        </dependency>
+        
+        <dependency>
+			<groupId>javax.xml.bind</groupId>
+			<artifactId>jaxb-api</artifactId>
+		    </dependency>
+        
+        <!-- slf4j, log4j -->
+        <dependency>
+		    <groupId>org.slf4j</groupId>
+		    <artifactId>slf4j-log4j12</artifactId>
+		    <scope>test</scope>
+		</dependency>
+		
+		<!-- 자바용 json 라이브러리(XML/YAML/CSV) data-processing 툴 --> 
+	    <dependency>
+	          <groupId>com.fasterxml.jackson.core</groupId>
+	          <artifactId>jackson-core</artifactId>
+	          <version>2.10.1</version>
+	      </dependency>
+	      <dependency>
+	          <groupId>com.fasterxml.jackson.core</groupId>
+	          <artifactId>jackson-databind</artifactId>
+	          <version>2.10.1</version>
+	      </dependency>
+		
 	</dependencies>
 
 	<build>

@@ -3,8 +3,70 @@
 
 <mapper namespace="mul.com.sns.dao.ChatDao">
 
-<select id="getRoom" parameterType="Integer" resultType="mul.com.sns.dto.RoomDto">
-	SELECT * FROM ROOM WHERE OWNERID = #{ seq }
+<select id="getAllChatList" resultType="mul.com.sns.dto.ChatDto">
+	SELECT * 
+	FROM CHAT
 </select>
+
+<select id="getChatList" parameterType="Integer" resultType="mul.com.sns.dto.ChatDto">
+	SELECT A.SEQ, A.USERID, A.CDATE, 
+		(SELECT COUNT(*) FROM MESSAGE
+		 WHERE CHATID = A.SEQ
+		 AND USERID != #{userid}
+		 AND READED = 1) NEWMESSAGECOUNT,
+		 (SELECT IFNULL(CONTENT, FILE) FROM MESSAGE
+		 WHERE CHATID = A.SEQ
+		 ORDER BY WDATE DESC LIMIT 1) RECENTMESSAGE
+	FROM CHAT A
+	WHERE USERID = #{userid}
+</select>
+
+<select id="getChatId" parameterType="mul.com.sns.dto.ChatDto" resultType="Integer">
+	SELECT SEQ
+	FROM CHAT 
+	WHERE AND USERID = #{userid}
+</select>
+
+<insert id="addChat" parameterType="Integer">
+	INSERT INTO CHAT(USERID, CREATED_AT)
+	VALUES(#{userid}, NOW())
+</insert>
+
+<delete id="deleteChat" parameterType="Integer">
+	DELETE FROM CHAT
+	WHERE SEQ = #{seq}
+</delete>
+
+<delete id="deleteMessage" parameterType="Integer">
+	DELETE FROM MESSAGE
+	WHERE CHATID = #{seq}
+</delete>
+
+<select id="getMessageList" parameterType="Integer" resultType="mul.com.sns.dto.MessageDto">
+	SELECT SEQ, USERID, CHATID, CONTENT, FILE, WDATE
+	FROM MESSAGE 
+	WHERE CHATID = #{seq}
+</select>
+
+<select id="getMessage" parameterType="Integer" resultType="mul.com.sns.dto.MessageDto">
+	SELECT SEQ, USERID, CHATID, CONTENT, FILE, WDATE
+	FROM MESSAGE 
+	WHERE SEQ = #{seq}
+</select>
+
+<insert id="addMessage" parameterType="mul.com.sns.dto.MessageDto">
+	INSERT INTO MESSAGE(USERID, CHATID, CONTENT, FILE, READED, WDATE)
+	VALUES(#{userid}, #{chatid}, #{content}, #{file}, 1, NOW())
+</insert>
+
+<update id="setReadMessage" parameterType="mul.com.sns.dto.MessageDto">
+	UPDATE MESSAGE
+	SET READED = 0
+	WHERE CHATID = #{chatid}
+		AND USERID != #{userid}
+		AND READED = 1
+</update>
+
+
 
 </mapper>

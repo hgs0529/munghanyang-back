@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="mul.com.sns.dao.UserDao">
+
+<!-- seq로 유저 정보 가져오기 -->
+<select id="findUserBySeq" parameterType="Integer" resultType="mul.com.sns.dto.UserDto">
+	SELECT * FROM USER
+	WHERE SEQ = #{seq}
+</select>
+
+<!-- 이메일로 유저 정보 가져오기 -->
+<select id="findUserByEmail" parameterType="String" resultType="mul.com.sns.dto.UserDto">
+	SELECT * FROM USER
+	WHERE EMAIL = #{email}
+</select>
+
+<!-- 리프레시토큰 확인하기 -->
+<select id="findRefreshToken" parameterType="Integer" resultType="String">
+	SELECT TOKEN FROM TOKEN
+	WHERE ID = #{id}
+</select>
+
+<!-- 리프레시토큰 넣기 -->
+<insert id="insertRefreshToken" parameterType="mul.com.sns.dto.UserDto">
+	INSERT INTO TOKEN
+	VALUES(#{id} ,#{token}, #{auth})
+</insert>
+
+<!-- 리프레시토큰 업데이트 -->
+<update id="updateRefreshToken" parameterType="mul.com.sns.dto.UserDto">
+	UPDATE USER
+	SET TOKEN = #{token}
+	WHERE SEQ = #{seq}
+</update>
+
+<!-- 로그아웃: 리프레시토큰 삭제 -->
+<delete id="deleteRefreshToken">
+	DELETE FROM TOKEN
+	WHERE ID = #{id}
+</delete>
+
+<!-- ==== 회원가입 ==== -->
+<!-- 이메일 중복 확인 -->
+<select id="emailCheck" parameterType="String" resultType="mul.com.sns.dto.UserDto">
+	SELECT EMAIL, SNS_ONLY  FROM USER
+	WHERE EMAIL = #{email}
+</select>
+
+<!-- 닉네임 중복 확인 -->
+<select id="nicknameCheck" parameterType="String" resultType="mul.com.sns.dto.UserDto">
+	SELECT NICKNAME FROM USER
+	WHERE NICKNAME =  #{nickname}
+</select>
+
+<!-- 일반 계정으로 가입 -->
+<insert id="addUser" parameterType="mul.com.sns.dto.UserDto">
+	INSERT INTO USER(EMAIL, PWD, NICKNAME, CREATED_AT, SNS_ONLY, MUNGPOINT, AUTH)
+	VALUES(#{email}, #{pwd}, #{nickname}, NOW(), false, 1000, 1)
+</insert>
+
+</mapper>

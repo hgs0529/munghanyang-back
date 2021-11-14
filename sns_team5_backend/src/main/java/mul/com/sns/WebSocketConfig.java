@@ -6,10 +6,9 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
-
 @EnableWebSocketMessageBroker
 @Configuration
-public class StompWebSocketConfig implements WebSocketMessageBrokerConfigurer{
+public class WebSocketConfig implements WebSocketMessageBrokerConfigurer{
 	
 	@Override
 	public void registerStompEndpoints(StompEndpointRegistry registry) {
@@ -21,10 +20,11 @@ public class StompWebSocketConfig implements WebSocketMessageBrokerConfigurer{
 
 	@Override
 	public void configureMessageBroker(MessageBrokerRegistry registry) {
-		
-		registry.setApplicationDestinationPrefixes("/pub");
-		registry.enableSimpleBroker("/sub");
+		registry.setApplicationDestinationPrefixes("http://localhost:3000/pub");
+		registry.enableSimpleBroker("http://localhost:3000/sub");
 	}
+
+	
 	
 	
 	

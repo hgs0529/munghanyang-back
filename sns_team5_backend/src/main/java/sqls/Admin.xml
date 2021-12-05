@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="mul.com.sns.dao.AdminDao">
+
+<select id="getNewUser" resultType="Integer">
+	SELECT COALESCE(COUNT(*), 0) FROM USER
+	WHERE CDATE BETWEEN DATE_SUB(NOW(), INTERVAL 6 DAY) AND NOW()
+</select>
+
+<select id="getNewUserUpDown" resultType="Integer">
+	SELECT COALESCE(COUNT(*), 0) FROM USER
+	WHERE CDATE BETWEEN DATE_SUB(NOW(), INTERVAL 13 DAY) AND DATE_SUB(NOW(), INTERVAL 7 DAY)
+</select>
+
+<select id="getNewOrder" resultType="Integer">
+	SELECT COALESCE(COUNT(*), 0) FROM ORDERS
+	WHERE ORDERDATE BETWEEN DATE_SUB(NOW(), INTERVAL 6 DAY) AND NOW()
+</select>
+
+<select id="getNewOrderUpDown" resultType="Integer">
+	SELECT COALESCE(COUNT(*), 0) FROM ORDERS
+	WHERE ORDERDATE BETWEEN DATE_SUB(NOW(), INTERVAL 13 DAY) AND DATE_SUB(NOW(), INTERVAL 7 DAY)
+</select>
+
+<select id="getNewSales" resultType="Integer">
+	SELECT COALESCE(SUM(PRODUCTAMOUNT), 0) FROM ORDERS
+	WHERE ORDERDATE BETWEEN DATE_SUB(NOW(), INTERVAL 6 DAY) AND NOW()
+</select>
+
+<select id="getNewSalesUpDown" resultType="Integer">
+	SELECT COALESCE(SUM(PRODUCTAMOUNT), 0) FROM ORDERS
+	WHERE ORDERDATE BETWEEN DATE_SUB(NOW(), INTERVAL 13 DAY) AND DATE_SUB(NOW(), INTERVAL 7 DAY)
+</select>
+
+<select id="getDailySales" parameterType="java.sql.Date" resultType="Integer">
+	SELECT COALESCE(SUM(PRODUCTAMOUNT), 0) FROM ORDERS
+	WHERE ORDERDATE BETWEEN #{date} AND DATE_ADD(#{date}, INTERVAL 1 DAY)
+</select>
+
+<select id="getUserList" parameterType="mul.com.sns.dto.SearchParam" resultType="mul.com.sns.dto.UserDto">
+	SELECT * FROM
+	(SELECT ROW_NUMBER() OVER(ORDER BY SEQ DESC) AS RNUM, SEQ, EMAIL, NICKNAME,
+	CDATE, MUNGPOINT, SNS_ONLY FROM USER AS USER_SUB
+	<where>
+		<if test='startDate != null and startDate != "" and endDate != null and endDate != ""'>
+			AND
+			CDATE BETWEEN #{startDate} AND #{endDate}
+		</if>
+		<if test='choice != null and choice != "" and search != null and search != ""'>
+			AND
+			<if test='choice == "nickname"'>
+			NICKNAME LIKE CONCAT_WS('', '%', #{search}, '%')
+			</if>
+			<if test='choice == "email"'>
+			EMAIL LIKE CONCAT_WS('', '%', #{search}, '%')
+			</if>
+			<if test='sns_only == true'>
+			SNS_ONLY = true
+			</if>
+		</if>
+	</where>
+	ORDER BY SEQ DESC) AS USSB
+	WHERE RNUM BETWEEN #{start} AND #{end}
+</select>
+
+<select id="getUserCount" parameterType="mul.com.sns.dto.SearchParam" resultType="Integer">
+	SELECT COALESCE(COUNT(*), 0) FROM USER
+	<where>
+		<if test='startDate != null and startDate != "" and endDate != null and endDate != ""'>
+			AND
+			CDATE BETWEEN #{startDate} AND #{endDate}
+		</if>
+		<if test='choice != null and choice != "" and search != null and search != ""'>
+			AND
+			<if test='choice == "nickname"'>
+			NICKNAME LIKE CONCAT_WS('', '%', #{search}, '%')
+			</if>
+			<if test='choice == "email"'>
+			EMAIL LIKE CONCAT_WS('', '%', #{search}, '%')
+			</if>
+		</if>
+		<if test='sns_only == true'>
+		AND
+		SNS_ONLY = #{search}
+		</if>
+	</where>
+</select>
+
+<select id="getOrderList" parameterType="mul.com.sns.dto.SearchParam" resultType="mul.com.sns.dto.OrdersDto">
+	SELECT * FROM
+	(SELECT ROW_NUMBER() OVER(ORDER BY SEQ DESC) AS RNUM, OD.SEQ, OD.PRODUCTAMOUNT, OD.USEMUNGPOINT, OD.ORDERSTATUS, OD.ORDERDATE,
+	(SELECT NICKNAME FROM USER WHERE SEQ = OD.USERID) AS ORDERNAME,
+	(SELECT ADDRESS FROM ADDRESS WHERE SEQ = OD.ADDRESSID) AS ADDRESS
+	FROM ORDERS AS OD
+	<where>
+		<if test='startDate != null and startDate != "" and endDate != null and endDate != ""'>
+			AND
+			ORDERDATE BETWEEN #{startDate} AND #{endDate}
+		</if>
+		<if test="choice != null and choice != '' and search != null and search != ''">
+			AND
+			<if test="choice == 'orderstatus'">
+			ORDERSTATUS = #{search}
+			</if>
+			<if test="choice == 'realname'">
+			REALNAME LIKE CONCAT_WS('', '%', #{search}, '%')
+			</if>
+			<if test="choice == 'email'">
+			EMAIL LIKE CONCAT_WS('', '%', #{search}, '%')
+			</if>
+			<if test="choice == addressname">
+			ADDRESSNAME LIKE CONCAT_WS('', '%', #{search}, '%')
+			</if>
+		</if>
+	</where>
+	ORDER BY SEQ DESC) AS ODSB
+	WHERE RNUM BETWEEN #{start} AND #{end}
+</select>
+
+<select id="getOrderProduct" parameterType="Integer" resultType="mul.com.sns.dto.OrdersDto">
+	SELECT NAME AS PNAME, COALESCE(count(*),0) AS PCOUNT FROM PRODUCT AS PR
+	WHERE SEQ IN (SELECT PRODUCTID FROM ORDERS_DETAIL AS ODT WHERE ORDERID = #{seq});
+</select>
+
+<select id="getOrderCount" parameterType="mul.com.sns.dto.SearchParam" resultType="Integer">
+	SELECT COALESCE(COUNT(*), 0) FROM ORDERS
+	<where>
+		<if test='startDate != null and startDate != "" and endDate != null and endDate != ""'>
+			AND
+			ORDERDATE BETWEEN #{startDate} AND #{endDate}
+		</if>
+		<if test="choice != null and choice != '' and search != null and search != ''">
+			AND
+			<if test="choice == 'orderstatus'">
+			ORDERSTATUS = #{search}
+			</if>
+			<if test="choice == 'realname'">
+			REALNAME LIKE CONCAT_WS('', '%', #{search}, '%')
+			</if>
+			<if test="choice == 'email'">
+			EMAIL LIKE CONCAT_WS('', '%', #{search}, '%')
+			</if>
+			<if test="choice == addressname">
+			ADDRESSNAME LIKE CONCAT_WS('', '%', #{search}, '%')
+			</if>
+		</if>
+	</where>
+</select>
+
+<update id="changeOrderStatus" parameterType="mul.com.sns.dto.OrdersDto">
+	UPDATE ORDERS
+	SET ORDERSTATUS = #{orderstatus}
+	WHERE SEQ IN
+	<foreach collection="orderarray" item="seq" index="index" open="(" close=")" separator=",">
+		#{seq}
+	</foreach>
+</update>
+
+<select id="getAskList" parameterType="mul.com.sns.dto.SearchParam" resultType="mul.com.sns.dto.AskDto">
+	SELECT * FROM
+	(SELECT ROW_NUMBER() OVER(ORDER BY SEQ DESC) AS RNUM, PA.SEQ, PA.CONTENT, PA.WDATE,
+	(SELECT COALESCE(COUNT(*), 0) FROM (SELECT * FROM PRODUCT_ASK AS ASK WHERE REF = PA.SEQ) AS ANSWER) AS ANSWERED,
+	(SELECT NICKNAME FROM USER WHERE SEQ = PA.USERID) AS ASKNAME,
+	(SELECT NAME FROM PRODUCT WHERE SEQ = PA.PRODUCTID) AS PNAME
+	FROM PRODUCT_ASK AS PA
+	<where>
+		ASKSTATUS = 1
+		<if test='startDate != null and startDate != "" and endDate != null and endDate != ""'>
+			AND
+			ASKDATE BETWEEN #{startDate} AND #{endDate}
+		</if>
+		<if test="choice != null and choice != '' and search != null and search != ''">
+			AND
+			<if test="choice == 'pname'">
+			PNAME LIKE CONCAT_WS('', '%', #{search}, '%')
+			</if>
+			<if test="choice == 'askname'">
+			ASKNAME LIKE CONCAT_WS('', '%', #{search}, '%')
+			</if>
+		</if>
+		<if test="answerStatus != null and answerStatus != 2">
+			AND
+			ANSWERED = #{answerStatus}
+		</if>
+	</where>
+	ORDER BY SEQ DESC) AS PASB
+	WHERE RNUM BETWEEN #{start} AND #{end}
+</select>
+
+<select id="getAskCount" parameterType="mul.com.sns.dto.SearchParam" resultType="Integer">
+	SELECT COALESCE(COUNT(*), 0) FROM PRODUCT_ASK
+	<where>
+		ASKSTATUS = 1
+		<if test='startDate != null and startDate != "" and endDate != null and endDate != ""'>
+			AND
+			ASKDATE BETWEEN #{startDate} AND #{endDate}
+		</if>
+		<if test="choice != null and choice != '' and search != null and search != ''">
+			AND
+			<if test="choice == 'pname'">
+			PNAME LIKE CONCAT_WS('', '%', #{search}, '%')
+			</if>
+			<if test="choice == 'askname'">
+			ASKNAME LIKE CONCAT_WS('', '%', #{search}, '%')
+			</if>
+		</if>
+	</where>
+</select>
+
+<select id="getAskDetail" parameterType="Integer" resultType="mul.com.sns.dto.AskDto">
+	SELECT * FROM
+	(SELECT PA.SEQ, PA.CONTENT, PA.WDATE, PA.PRODUCTID, PA.ASKSTATUS,
+	(SELECT COALESCE(COUNT(*), 0) FROM (SELECT * FROM PRODUCT_ASK AS ASK WHERE REF = PA.SEQ) AS ANSWER) AS ANSWERED,
+	(SELECT NICKNAME FROM USER WHERE SEQ = PA.USERID) AS ASKNAME,
+	(SELECT NAME FROM PRODUCT WHERE SEQ = PA.PRODUCTID) AS PNAME
+	FROM PRODUCT_ASK AS PA) AS PASB
+	WHERE SEQ = #{seq}
+</select>
+
+<select id="getAnswerDetail" parameterType="mul.com.sns.dto.AskDto" resultType="mul.com.sns.dto.AskDto">
+	SELECT * FROM
+	(SELECT PA.SEQ, PA.CONTENT, PA.WDATE, PA.ANSWERED, PA.PRODUCTID, PA.ASKSTATUS, PA.REF,
+	(SELECT NICKNAME FROM USER WHERE SEQ = PA.USERID) AS ASKNAME,
+	(SELECT NAME FROM PRODUCT WHERE SEQ = PA.PRODUCTID) AS PNAME
+	FROM PRODUCT_ASK AS PA) AS PASB
+	WHERE REF = #{ref}
+</select>
+
+<insert id="addAskAnswer" parameterType="mul.com.sns.dto.AskDto">
+	INSERT INTO PRODUCT_ASK(USERID, PRODUCTID, CONTENT, WDATE, ASKSTATUS, REF)
+	VALUES(#{userid}, #{productid}, #{content}, NOW(), 2, #{ref})
+</insert>
+
+<update id="updateAskAnswer" parameterType="mul.com.sns.dto.AskDto">
+	UPDATE PRODUCT_ASK
+	SET CONTENT = #{content}
+	WHERE SEQ = #{seq}
+</update>
+
+<update id="updateAsk" parameterType="Integer">
+	UPDATE PRODUCT_ASK
+	SET ANSWERED = TRUE
+	WHERE SEQ = #{seq}
+</update>
+
+<select id="getAskProduct" parameterType="Integer" resultType="mul.com.sns.dto.AskDto">
+	SELECT A.SEQ, A.USERID, A.PRODUCTID, A.CONTENT, A.WDATE ,A.ASKTYPE,
+	(SELECT COUNT(*) FROM PRODUCT_ASK WHERE ASKSTATUS = 2 AND REF = A.SEQ) AS ANSWERED,
+	(SELECT NICKNAME FROM USER WHERE SEQ=A.USERID)AS NICKNAME,
+	(SELECT AVATAR FROM USER WHERE SEQ=A.USERID)AS AVATAR  
+	FROM PRODUCT_ASK A
+	WHERE PRODUCTID=#{productid} AND ASKSTATUS = 1
+	ORDER BY A.WDATE DESC
+</select>
+
+<select id="getAnswerProduct" parameterType="Integer" resultType="mul.com.sns.dto.AskDto">
+	SELECT CONTENT, WDATE, REF
+	FROM PRODUCT_ASK
+	WHERE PRODUCTID=#{productid} AND ASKSTATUS=2
+</select>
+
+
+</mapper>

@@ -125,12 +125,12 @@ public class JwtUtil implements Serializable {
     
     // 액세스 토큰 쿠키 설정
     public void setCookieAccessToken(HttpServletResponse response, String accessToken) {
-    	cookieUtil.addCookie(response, "Authorization", accessToken, Long.valueOf(accessTokenValidTime).intValue(), false);
+    	cookieUtil.addCookie(response, "Authorization", accessToken, 30 * 60, false);
     }
 
     // 리프레시 토큰 쿠키 설정 (안에 실제 정보는 없음. 요청받을 때 비교용이고 진짜는 DB에 저장)
     public void setCookieRefreshToken(HttpServletResponse response, String refreshToken) {
-    	cookieUtil.addCookie(response, "RefreshToken", refreshToken, Long.valueOf(refreshTokenValidTime).intValue(), true);
+    	cookieUtil.addCookie(response, "RefreshToken", refreshToken, 7 * 24 * 60 * 60, true);
     }
 
     // 리프레시토큰 존재 확인

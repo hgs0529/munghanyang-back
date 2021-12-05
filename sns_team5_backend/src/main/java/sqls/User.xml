@@ -15,29 +15,36 @@
 	WHERE EMAIL = #{email}
 </select>
 
+<!-- 비밀번호 변경 -->
+<update id="resetPwd" parameterType="mul.com.sns.dto.UserDto">
+	UPDATE USER
+	SET PWD = #{pwd}
+	WHERE EMAIL = #{email}
+</update>
+
 <!-- 리프레시토큰 확인하기 -->
 <select id="findRefreshToken" parameterType="Integer" resultType="String">
 	SELECT TOKEN FROM TOKEN
-	WHERE ID = #{id}
+	WHERE ID = #{seq}
 </select>
 
 <!-- 리프레시토큰 넣기 -->
 <insert id="insertRefreshToken" parameterType="mul.com.sns.dto.UserDto">
 	INSERT INTO TOKEN
-	VALUES(#{id} ,#{token}, #{auth})
+	VALUES(#{seq} ,#{token})
 </insert>
 
 <!-- 리프레시토큰 업데이트 -->
 <update id="updateRefreshToken" parameterType="mul.com.sns.dto.UserDto">
-	UPDATE USER
+	UPDATE TOKEN
 	SET TOKEN = #{token}
-	WHERE SEQ = #{seq}
+	WHERE ID = #{seq}
 </update>
 
 <!-- 로그아웃: 리프레시토큰 삭제 -->
-<delete id="deleteRefreshToken">
+<delete id="deleteRefreshToken" parameterType="Integer">
 	DELETE FROM TOKEN
-	WHERE ID = #{id}
+	WHERE ID = #{seq}
 </delete>
 
 <!-- ==== 회원가입 ==== -->
@@ -55,8 +62,33 @@
 
 <!-- 일반 계정으로 가입 -->
 <insert id="addUser" parameterType="mul.com.sns.dto.UserDto">
-	INSERT INTO USER(EMAIL, PWD, NICKNAME, CREATED_AT, SNS_ONLY, MUNGPOINT, AUTH)
+	INSERT INTO USER(EMAIL, PWD, NICKNAME, CDATE, SNS_ONLY, MUNGPOINT, AUTH)
 	VALUES(#{email}, #{pwd}, #{nickname}, NOW(), false, 1000, 1)
 </insert>
 
+<!-- SNS 계정으로 가입 -->
+<insert id="addOauthUser" parameterType="mul.com.sns.dto.UserDto">
+	INSERT INTO USER(EMAIL, PWD, NICKNAME, CDATE, SNS_ONLY, MUNGPOINT, AVATAR, AUTH)
+	VALUES(#{email}, 0, #{nickname}, NOW(), true, 1000, #{avatar}, 1)
+</insert>
+
+<!-- 유저 정보 수정 -->
+<update id="updateUserProfile" parameterType="mul.com.sns.dto.UserDto">
+	UPDATE USER
+	SET NICKNAME = #{nickname}
+		, AVATAR = #{avatar}
+	WHERE SEQ = #{seq}
+</update>
+
+<!-- 회원 탈퇴 -->
+<delete id="deleteUser" parameterType="Integer">
+	DELETE FROM USER
+	WHERE SEQ = #{seq}
+</delete>
+
+<!-- 상품 문의 -->
+<insert id="addProductAsk" parameterType="mul.com.sns.dto.AskDto">
+	INSERT INTO PRODUCT_ASK(USERID, PRODUCTID, CONTENT, WDATE, ASKSTATUS,ASKTYPE)
+	VALUES(#{userid}, #{productid}, #{content}, NOW(), 1,#{asktype})
+</insert>
 </mapper>

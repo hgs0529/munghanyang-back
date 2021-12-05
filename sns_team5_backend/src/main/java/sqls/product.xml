@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="mul.com.sns.dao.ProductDao">
+
+<!-- 모든상품 가져오기 -->
+<select id="getallProduct" resultType="mul.com.sns.dto.ProductDto">
+	SELECT *
+	FROM PRODUCT
+	ORDER BY CREATED DESC
+</select>
+
+<!-- 메인에 종류별 상품 지정 갯수만큼 가져오기 -->
+<select id="orderProduct" parameterType="mul.com.sns.dto.PageParam" resultType="mul.com.sns.dto.ProductDto">
+	SELECT A.SEQ, A.NAME, A.THUMBNAIL, A.CONTENT, A.PRICE, A.CREATED, A.DEL, A.DISCOUNT, A.CATEGORYCODE, A.SELLCOUNT,
+	(SELECT CATENAME FROM PRODUCT_CATEGORY WHERE CATECODE=A.CATEGORYCODE)AS CATENAME,
+	(SELECT AVG(STAR) FROM COMMENT WHERE PRODUCTID=A.SEQ)AS STARCOUNT,
+	(SELECT COUNT(*) FROM COMMENT WHERE PRODUCTID=A.SEQ)AS REVIEWCOUNT
+	FROM PRODUCT A
+	<if test="order == 0"> <!--일주일 판매순 -->
+		WHERE A.CREATED>#{created}
+		ORDER BY A.SELLCOUNT DESC
+		LIMIT 0,4;
+	</if>
+	<if test="order == 1"> <!-- 별점높은순 리뷰 많은순-->
+		ORDER BY STARCOUNT DESC , REVIEWCOUNT DESC
+		LIMIT 0,6;
+	</if>
+	<if test="order == 2"> <!-- 최신순 -->
+		ORDER BY SEQ DESC
+		LIMIT 0,12;
+	</if>
+</select>
+
+
+<!-- 카테고리별 상품 가져오기 -->
+<select id="categoryProduct" parameterType="mul.com.sns.dto.PageParam" resultType="mul.com.sns.dto.ProductDto">
+	SELECT A.SEQ, A.NAME, A.THUMBNAIL, A.CONTENT, A.PRICE, A.CREATED, A.DEL, A.DISCOUNT, A.CATEGORYCODE, A.SELLCOUNT,
+	(SELECT CATENAME FROM PRODUCT_CATEGORY WHERE CATECODE=A.CATEGORYCODE)AS CATENAME,
+	(SELECT COUNT(*) FROM COMMENT WHERE PRODUCTID=A.SEQ)AS PRODUCTREVIEW, A.RNUM
+	FROM (SELECT @ROWNUM := @ROWNUM+1 AS RNUM,
+		A.SEQ, A.NAME, A.THUMBNAIL, A.CONTENT, A.PRICE, A.CREATED, A.DEL, A.DISCOUNT, A.CATEGORYCODE,A.SELLCOUNT
+		FROM PRODUCT AS A, (SELECT @ROWNUM:=0) R
+	<choose>
+	<when test="category%1000==0">
+		WHERE TRUNCATE(A.CATEGORYCODE/1000, 0) = TRUNCATE(#{category}/1000, 0)
+	</when>
+	<when test="category%100==0">
+		WHERE TRUNCATE(A.CATEGORYCODE/100, 0) = TRUNCATE(#{category}/100, 0)
+	</when>
+	<otherwise>
+		WHERE A.CATEGORYCODE=#{category}
+	</otherwise>
+	</choose>
+	<!-- 	
+	<if test="category%1000==0">
+		WHERE A.CATEGORYCODE/1000=#{category}/1000
+	</if>
+	<if test="category%100==0">
+		WHERE A.CATEGORYCODE/100=#{category}/100
+	</if>
+	<if test="category%100!=0">
+		WHERE A.CATEGORYCODE=#{category}
+	</if> -->
+	ORDER BY CREATED DESC) A
+	WHERE A.RNUM BETWEEN #{start} AND #{end}
+	<choose>
+	<when test="groupno==0"> <!-- 리뷰 많은순 -->
+		ORDER BY PRODUCTREVIEW DESC 
+	</when>
+	<when test="groupno==1"> <!-- 낮은 가격순 -->
+		ORDER BY A.PRICE ASC
+	</when>
+	<when test="groupno==2"> <!-- 높은 가격순 -->
+		ORDER BY A.PRICE DESC
+	</when>
+	<when test="groupno==3"> <!-- 최신순 -->
+		ORDER BY A.CREATED DESC	
+	</when>
+	<otherwise> <!-- 판매 많은순 -->
+		ORDER BY A.SELLCOUNT DESC  
+	</otherwise>
+	</choose>
+</select>
+
+<!-- 상품 상세정보 가져오기 -->
+<select id="getProduct" parameterType="mul.com.sns.dto.PageParam" resultType="mul.com.sns.dto.ProductDto">
+	SELECT A.SEQ, A.NAME, A.THUMBNAIL, A.CONTENT, A.PRICE, A.CREATED, A.DEL, A.DISCOUNT, A.CATEGORYCODE, A.SELLCOUNT,
+	(SELECT IF(COUNT(*)=1,1,0) FROM LIKES WHERE USERID=#{userid} AND PRODUCTID=A.SEQ) AS ISLIKED,
+	(SELECT COUNT(*) FROM LIKES WHERE PRODUCTID=A.SEQ) AS LIKECOUNT,
+	(SELECT CATENAME FROM PRODUCT_CATEGORY WHERE CATECODE=A.CATEGORYCODE)AS CATENAME
+	FROM PRODUCT A
+	WHERE SEQ=#{seq}
+</select>
+
+<!-- 키워드로 검색한 모든 관련 상품 가져오기 -->
+<select id="searchProduct" resultType="mul.com.sns.dto.ProductDto">
+	SELECT *
+	FROM PRODUCT
+	WHERE NAME LIKE '%'||#{ search }||'%' OR CONTENT LIKE '%'||#{ search }||'%'
+</select>
+
+<!-- 상품 추가하기 -->
+<insert id="addProduct" parameterType="mul.com.sns.dto.ProductDto">
+	INSERT INTO PRODUCT(NAME,THUMBNAIL,CONTENT,PRICE, DEL, DISCOUNT, CATEGORYCODE, CREATED,SELLCOUNT)
+	VALUES(#{name},#{thumbnail},#{content},#{price},0,#{discount},#{categorycode},now(), 0)
+</insert>
+
+<select id="recentlyProductSeq" resultType="Integer">
+	SELECT MAX(SEQ) 
+	FROM PRODUCT
+</select>
+
+<insert id="addProductOption" parameterType="mul.com.sns.dto.ProductOptionDto">
+	INSERT INTO PRODUCT_OPTION(PRODUCTID, TITLE, SUBTITLE, OPTIONPRICE)
+	VALUES(#{productid}, #{title}, #{subtitle}, #{optionprice})
+</insert>
+
+<select id="getProductSeq" parameterType="mul.com.sns.dto.ProductDto" resultType="Integer">
+	SELECT SEQ
+	FROM PRODUCT
+	WHERE THUMBNAIL=#{thumbnail}
+</select>
+
+<!-- 강아지 또는 고양이 하위 카데고리 가져오기 -->
+<select id="dogorcatCategory" parameterType="Integer" resultType="mul.com.sns.dto.ProductCategoryDto">
+	SELECT A.CATENAME,A.CATECODE
+	FROM PRODUCT_CATEGORY A
+	WHERE DOGORCAT=#{dogorcat} AND A.CATECODE%100=0
+</select>
+
+<!-- 메인카테고리 별 하위 카데고리 가져오기 -->
+<select id="detailCategory" parameterType="Integer" resultType="mul.com.sns.dto.ProductCategoryDto">
+	SELECT CATENAME,CATECODE
+	FROM PRODUCT_CATEGORY
+	WHERE CATECODEREF=#{catecode}
+</select>
+
+<select id="getProductDetail" parameterType="mul.com.sns.dto.PageParam" resultType="mul.com.sns.dto.ProductDto">
+	SELECT A.SEQ, A.NAME, A.THUMBNAIL, A.CONTENT, A.PRICE, A.CREATED, A.DEL, A.DISCOUNT, A.CATEGORYCODE, A.SELLCOUNT,
+	(SELECT IF(COUNT(*)=1,1,0) FROM LIKES WHERE USERID=#{userid} AND PRODUCTID=A.SEQ) AS ISLIKED,
+	(SELECT COUNT(*) FROM LIKES WHERE PRODUCTID=A.SEQ) AS LIKECOUNT,
+	(SELECT CATENAME FROM PRODUCT_CATEGORY WHERE CATECODE=A.CATEGORYCODE)AS CATENAME,
+	(SELECT AVG(STAR) FROM COMMENT WHERE PRODUCTID=A.SEQ)AS STAR
+	FROM PRODUCT A
+	WHERE SEQ=#{seq}
+</select>
+
+<select id="getProductOption" parameterType="Integer" resultType="mul.com.sns.dto.ProductOptionDto">
+	SELECT SEQ, PRODUCTID, TITLE, SUBTITLE, OPTIONPRICE
+	FROM PRODUCT_OPTION
+	WHERE PRODUCTID=#{productid}
+</select>
+
+<select id="getCategoryByCatecode" parameterType="Integer" resultType="String">
+	SELECT CATENAME
+	FROM PRODUCT_CATEGORY
+	WHERE CATECODE=#{catecode}
+</select>
+
+<select id="getProductComment" parameterType="Integer" resultType="mul.com.sns.dto.CommentDto">
+	SELECT A.SEQ, A.USERID, A.PRODUCTID, A.CONTENT, A.CDATE,A.FILE,A.STAR,
+	(SELECT AVATAR FROM USER WHERE SEQ=A.USERID) AS AVATAR,	 
+	(SELECT NICKNAME FROM USER WHERE SEQ=A.USERID) AS NICKNAME
+	FROM COMMENT A
+	WHERE A.PRODUCTID=#{productid}
+	ORDER BY SEQ DESC
+</select>
+
+</mapper>

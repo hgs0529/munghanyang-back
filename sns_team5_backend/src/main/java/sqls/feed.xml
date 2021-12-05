@@ -2,55 +2,303 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="mul.com.sns.dao.FeedDao">
-<select id="getallFeed" resultType="mul.com.sns.dto.FeedDto">
-	SELECT * 
-	FROM PHOTO
-	ORDER BY CREATED_AT DESC
+<!-- 모든 Feed 가져오기 -->
+<select id="getallFeed" parameterType="mul.com.sns.dto.PageParam" resultType="mul.com.sns.dto.FeedDto">
+	SELECT A.SEQ, A.USERID, A.GROUPNO, A.TITLE, A.CATE, A.FILE, A.CONTENT, A.CREATED, A.P_LINK,A.UPDATED,A.PRODUCTID, A.READCOUNT,
+		(SELECT AVATAR FROM USER WHERE SEQ=A.USERID) AS AVATAR,
+		(SELECT NICKNAME FROM USER WHERE SEQ=A.USERID) AS NICKNAME,
+		(SELECT COUNT(*) FROM LIKES WHERE PHOTOID=A.SEQ) AS LIKECOUNT,
+		(SELECT COUNT(*) FROM COMMENT WHERE PHOTOID=A.SEQ) AS COMMENTCOUNT,
+		(SELECT CONTENT FROM COMMENT WHERE PHOTOID=A.SEQ ORDER BY CDATE DESC LIMIT 1) AS RECENTCOMMENT,
+		(SELECT NICKNAME FROM USER WHERE SEQ = (SELECT USERID FROM COMMENT WHERE PHOTOID=A.SEQ ORDER BY CDATE DESC LIMIT 1)) AS COMMENTWRITER,
+		(SELECT IF(COUNT(*)=1,1,0) FROM LIKES WHERE USERID=#{userid} AND PHOTOID=A.SEQ) AS ISLIKED, A.RNUM
+	FROM (SELECT @ROWNUM := @ROWNUM+1 AS RNUM,
+		A.SEQ, A.USERID, A.GROUPNO, A.FILE, A.CONTENT, A.CREATED, A.P_LINK,A.UPDATED,A.PRODUCTID,A.TITLE,A.CATE,A.READCOUNT
+		FROM PHOTO AS A, (SELECT @ROWNUM:=0) R
+		WHERE GROUPNO=#{groupno}
+		<if test="cate != '전체'">
+			AND CATE=#{cate}
+		</if>
+	ORDER BY CREATED DESC) A
+	WHERE A.RNUM BETWEEN #{start} AND #{end}
+	<if test="order == 2">
+		ORDER BY CREATED ASC
+	</if>
+	<if test="order == 1">
+		ORDER BY LIKECOUNT DESC
+	</if>
+	<if test="order == 0">
+		ORDER BY CREATED DESC
+	</if>
 </select>
 
-<insert id="addFeed" parameterType="mul.com.sns.dto.FeedDto">
-	INSERT INTO PHOTO(USERID, FILE, CONTENT, CREATED_AT, UPDATE_AT)
-	VALUES(#{userid}, #{file},#{content},NOW(),NULL)
-</insert>
 
-<update id="updateFeed" parameterType="mul.com.sns.dto.FeedDto">
+
+
+<!-- 유저의 모든 Feed 가져오기 -->
+<select id="getUserFeed" parameterType="mul.com.sns.dto.FeedDto" resultType="mul.com.sns.dto.FeedDto">
+	SELECT * FROM PHOTO
+	WHERE USERID = #{userid} AND GROUPNO = #{groupno}
+</select>
+
+<select id="getFeedCount" parameterType="mul.com.sns.dto.PageParam" resultType="Integer">
+	SELECT IFNULL(COUNT(*),0)AS CNT FROM PHOTO WHERE GROUPNO=#{groupno}
+	<if test="cate != '전체'">
+		AND CATE=#{cate}
+	</if>
+</select>
+
+<!-- 해당피드 가져오기 -->
+<select id="getFeed" parameterType="mul.com.sns.dto.FeedDto" resultType="mul.com.sns.dto.FeedDto">
+	SELECT A.SEQ, A.USERID, A.TITLE, A.GROUPNO, A.CATE, A.FILE, A.CONTENT, A.CREATED, A.UPDATED,A.READCOUNT,
+	(SELECT IF(COUNT(*)=1,1,0) FROM LIKES WHERE USERID=#{userid} AND PHOTOID=A.SEQ) AS ISLIKED,
+	(SELECT AVATAR FROM USER WHERE SEQ=A.USERID) AS AVATAR,
+	(SELECT IF(COUNT(*)=1,1,0) FROM FOLLOW WHERE FOLLOW_GIVE=#{userid} AND FOLLOW_RECV=A.USERID) AS ISFOLLOW,
+	(SELECT NICKNAME FROM USER WHERE SEQ=A.USERID) AS NICKNAME
+	FROM PHOTO A
+	WHERE SEQ=#{seq}
+</select>
+
+<update id="updateReadcount" parameterType="mul.com.sns.dto.FeedDto">
 	UPDATE PHOTO
-	SET CONTENT=#{content},
-		UPDATE_AT=NOW()
+	SET READCOUNT=READCOUNT+1
 	WHERE SEQ=#{seq}
 </update>
 
+<!-- 내가 좋아요 누른 모든피드 가져오기 -->
+<select id="getLikeFeed" parameterType="Integer" resultType="mul.com.sns.dto.FeedDto">
+	SELECT A.SEQ, A.USERID, A.TITLE, A.GROUPNO, A.CATE, A.FILE, A.CONTENT, A.CREATED, A.UPDATED, A.READCOUNT,
+	(SELECT IF(COUNT(*)=1,1,0) FROM LIKES WHERE USERID=A.USERID AND PHOTOID=A.SEQ) AS ISLIKED,
+	(SELECT AVATAR FROM USER WHERE SEQ=A.USERID) AS AVATAR,
+	(SELECT NICKNAME FROM USER WHERE SEQ=A.USERID) AS NICKNAME
+	FROM PHOTO A
+	WHERE SEQ=#{photoid}
+</select>
+
+<select id="getLikeCount" parameterType="Integer" resultType="Integer">
+	SELECT PHOTOID 
+	FROM LIKES 
+	WHERE USERID=#{userid} AND PHOTOID IS NOT NULL
+</select>
+
+<!-- 커뮤니티 카테고리별로 분류한 Feed 가지고 오기 -->
+<select id="getCategoryFeed" parameterType="mul.com.sns.dto.FeedDto" resultType="mul.com.sns.dto.FeedDto">
+	A.SEQ, A.USERID, A.GROUPNO, A.FILE, A.CONTENT, A.CREATED, A.P_LINK,A.UPDATED,A.PRODUCTID,
+		(SELECT COUNT(*) FROM LIKES WHERE USERID=#{userid} AND PHOTOID=A.SEQ) AS LIKES
+	FROM PHOTO A
+	WHERE GROUPNO=#{groupno}
+	ORDER BY CREATED DESC
+</select>
+
+<!-- feed 작성한 데이터 추가 -->
+<insert id="addFeed" parameterType="mul.com.sns.dto.FeedDto">
+	INSERT INTO PHOTO(USERID, GROUPNO,TITLE,FILE, CONTENT, CREATED, UPDATED, CATE, READCOUNT)
+	VALUES(#{userid},#{groupno},#{title},#{file},#{content},NOW(),NULL,#{cate},0)
+</insert>
+
+<!-- feed 수정하기 -->
+<update id="updateFeed" parameterType="mul.com.sns.dto.FeedDto">
+	UPDATE PHOTO
+	SET CONTENT=#{content},
+		UPDATED=NOW()
+	WHERE SEQ=#{seq}
+</update>
+
+
+<!-- 마이페이지에 내가올린 Feed 가지고오기 -->
+<select id="getMyFeed" parameterType="Integer" resultType="mul.com.sns.dto.FeedDto">
+	SELECT *
+	FROM PHOTO
+	WHERE USERID=#{userid}
+</select>
+
+<!-- 사진게시판에서 글쓴사람의 다른글 4개 보여줌 -->
+<select id="getOther" parameterType="mul.com.sns.dto.FeedDto" resultType="mul.com.sns.dto.FeedDto">
+	SELECT SEQ, FILE
+	FROM PHOTO
+	WHERE USERID=#{userid} AND GROUPNO=4 AND NOT SEQ=#{seq}
+	ORDER BY SEQ DESC
+	LIMIT 0,4;
+</select>
+
+
+<!-- feed 상세페이지에 넣을 데이터 가져오기 -->
+<select id="getFeedDetail" parameterType="Integer" resultType="mul.com.sns.dto.FeedDto">
+	SELECT *
+	FROM PHOTO
+	WHERE SEQ=#{seq}
+</select>
+
+<!-- feed 삭제하기 -->
 <delete id="deleteFeed" parameterType="Integer">
 	DELETE 
 	FROM PHOTO
 	WHERE SEQ=#{seq}
 </delete>
 
-<!-- **********************좋아요***************************** -->
-<!-- like 누르기 (좋아요) -->
-<insert id="givelikes" parameterType="mul.com.sns.dto.LikesDto">
-	INSERT INTO LIKES(USERID, PHOTOID)
-	VALUES(#{userid}, #{photoid})		  
+<!-- 가장 최근 추가된 피드의 seq가져오기 -->
+<select id="recentlyAddSeq" resultType="Integer">
+	SELECT MAX(SEQ) AS PHOTOID
+	FROM PHOTO	
+</select>
+
+
+<!-- 모든 likes 가져오기 (필요없어짐 서브쿼리 사용하여 해결)
+<select id="getallLikes" resultType="mul.com.sns.dto.LikesDto">
+	SELECT *
+	FROM LIKES
+	WHERE USERID=#{userid}
+</select> -->
+
+<!-- feed에 like총 수 -->
+<select id="getFeedLikes" parameterType="mul.com.sns.dto.FeedDto" resultType="Integer">
+	SELECT COUNT(*)
+	FROM LIKES
+	WHERE PHOTOID=#{seq}
+</select>
+
+<!-- 로그인한 사용자가 좋아요 누른지 여부 -->
+<select id="isLikes" parameterType="mul.com.sns.dto.FeedDto" resultType="boolean">
+	SELECT IF(COUNT(*)=1,1,0)
+	FROM LIKES
+	WHERE USERID=#{userid} AND PHOTOID=#{seq}
+</select>
+
+<!-- likes 비활성화된 부분을 누르면 추가 -->
+<insert id="addLikes" parameterType="mul.com.sns.dto.LikesDto">
+	INSERT INTO LIKES(USERID,PHOTOID)
+	VALUES(#{userid},#{photoid})
 </insert>
 
-<!-- like 취소하기 -->
-<delete id="deletelikes" parameterType="mul.com.sns.dto.LikesDto">
-	DELETE FROM LIKES
-	WHERE USERID=#{userid} AND PHOTOID=#{photoid}
+<!-- likes 활성화된 부분을 누르면 삭제 -->
+<delete id="deleteLikes" parameterType="mul.com.sns.dto.LikesDto">
+	DELETE
+	FROM LIKES
+	WHERE PHOTOID=#{photoid} AND USERID=#{userid}
 </delete>
 
-<!-- 좋아요 수 -->
-<select id="countlikes" parameterType="mul.com.sns.dto.LikesDto" resultType="mul.com.sns.dto.LikesDto">
-	SELECT COUNT(SEQ)
+<!-- likes 되어있는지 없는지 판단 -->
+<select id="serachLikes" parameterType="mul.com.sns.dto.LikesDto" resultType="Integer">
+	SELECT COUNT(*)
 	FROM LIKES
 	WHERE USERID=#{userid} AND PHOTOID=#{photoid}
 </select>
- 
-<!-- 내가 좋아요한 모든 글 -->
-<select id="likelist" resultType="mul.com.sns.dto.LikesDto">
-	SELECT PHOTOID
+
+<!-- 피드삭제시 해당피드에 좋아요 삭제 -->
+<delete id="deleteAllLikes" parameterType="Integer">
+	DELETE
 	FROM LIKES
-	WHERE USERID = #{userid}
+	WHERE PHOTOID=#{seq}
+</delete>
+
+
+
+<!-- Follow 부분 -->
+<!-- 팔로우 -->
+<insert id="follow" parameterType="mul.com.sns.dto.FollowDto">
+	INSERT INTO FOLLOW(FOLLOW_GIVE, FOLLOW_RECV)
+	VALUES(#{follow_give}, #{follow_recv})
+</insert>
+
+<select id="isfollow" parameterType="mul.com.sns.dto.FollowDto" resultType="Integer">
+	SELECT COUNT(*) FROM FOLLOW
+	WHERE FOLLOW_GIVE = #{follow_give} AND FOLLOW_RECV = #{follow_recv}
 </select>
+
+<!-- 언팔로우 (팔로우 취소) -->
+<delete id="unfollow" parameterType="mul.com.sns.dto.FollowDto">
+	DELETE
+	FROM FOLLOW
+	WHERE FOLLOW_GIVE=#{follow_give} AND FOLLOW_RECV=#{follow_recv}
+</delete>
+
+<!-- 팔로우 리스트 조회 -->
+<select id="getfollowlist" parameterType="mul.com.sns.dto.FollowDto" resultType="mul.com.sns.dto.FollowDto">
+	SELECT FOLLOW_RECV
+	FROM FOLLOW
+	WHERE FOLLOW_GIVE = (SELECT SEQ FROM 
+							(SELECT SEQ FROM USER WHERE SEQ = #{follow_give}) A)
+</select>
+
+<!-- 팔로워 리스트 조회 -->
+<select id="getfollowinglist" parameterType="mul.com.sns.dto.FollowDto" resultType="mul.com.sns.dto.FollowDto">
+	SELECT FOLLOW_GIVE
+	FROM FOLLOW
+	WHERE FOLLOW_RECV = (SELECT SEQ FROM 
+							(SELECT SEQ FROM USER WHERE SEQ = #{follow_recv}) A)
+	
+</select>
+
+<!-- 내가 팔로우 한 사람의 피드 가져오기 -->
+<select id="getfollowFeed" parameterType="Integer" resultType="mul.com.sns.dto.FeedDto">
+	SELECT A.SEQ, A.USERID, A.GROUPNO, A.FILE, A.CONTENT, A.CREATED, A.P_LINK,A.UPDATED,A.PRODUCTID,
+	(SELECT COUNT(*) FROM LIKES WHERE USERID=#{userid} AND PHOTOID=A.SEQ) AS LIKES,
+	(SELECT AVATAR FROM USER WHERE SEQ=A.USERID) AS AVATAR,
+	(SELECT NICKNAME FROM USER WHERE SEQ=A.USERID) AS NICKNAME
+	FROM PHOTO A
+	WHERE USERID = (SELECT FOLLOW_RECV
+						FROM FOLLOW
+						WHERE FOLLOW_GIVE=#{userid})
+</select>
+
+
+<!-- hashtag부분 -->
+<!-- 특정 게시물에 따라 해쉬태그를 불러오기 -->
+<select id="getHashtag" parameterType="Integer" resultType="String">
+	SELECT CONTENT 
+	FROM HASHTAG 
+	WHERE PHOTOID=#{seq}
+</select>
+
+<!-- 해쉬태그 추가하기 -->
+<insert id="addHashtag" parameterType="mul.com.sns.dto.HashtagDto">
+	INSERT INTO HASHTAG(PHOTOID, CONTENT)
+	VALUES( #{photoid}, #{content})
+</insert>
+
+<!-- 특정 해쉬태그를 포함하는 게시물들 불러오기 (파라미터 String입력? 해쉬태그Dto)-->
+<select id="getPhotoFromHashtag" parameterType="String" resultType="mul.com.sns.dto.HashtagDto">
+	SELECT * FROM PHOTO WHERE SEQ = (SELECT PHOTOID FROM (SELECT PHOTOID FROM HASHTAG WHERE CONTENT = #{content})A)
+</select>
+
+<!-- 피드삭제시 해당피드에 해시태그 삭제 -->
+<delete id="deletehashtag" parameterType="Integer">
+	DELETE
+	FROM HASHTAG
+	WHERE PHOTOID=#{seq}
+</delete>
+
+
+<select id="getcategoryFeed" parameterType="mul.com.sns.dto.FeedDto" resultType="mul.com.sns.dto.FeedDto">
+	SELECT A.SEQ, A.USERID, A.TITLE, A.GROUPNO, A.CATE, A.FILE, A.CONTENT, A.CREATED, A.UPDATED, A.READCOUNT,
+	(SELECT IF(COUNT(*)=1,1,0) FROM LIKES WHERE USERID=#{userid} AND PHOTOID=A.SEQ) AS ISLIKED,
+	(SELECT COUNT(*) FROM LIKES WHERE PHOTOID=A.SEQ) AS LIKECOUNT,
+	(SELECT AVATAR FROM USER WHERE SEQ=A.USERID) AS AVATAR,
+	(SELECT NICKNAME FROM USER WHERE SEQ=A.USERID) AS NICKNAME
+	FROM PHOTO A
+	<if test="groupno == 1">
+		WHERE GROUPNO=#{groupno} AND CREATED > #{created}
+		ORDER BY LIKECOUNT DESC
+		LIMIT 0,4;
+	</if>
+	<if test="groupno == 2">
+		WHERE GROUPNO=#{groupno}
+		ORDER BY CREATED DESC
+		LIMIT 0,3;
+	</if>
+	<if test="groupno == 3">
+		WHERE GROUPNO=#{groupno} AND CREATED > #{created}
+		ORDER BY CREATED DESC
+		LIMIT 0,4;
+	</if>
+	<if test="groupno == 4">
+		WHERE GROUPNO=#{groupno}
+		ORDER BY LIKECOUNT DESC
+		LIMIT 0,8;
+	</if>
+</select>
+
+
+
 
 </mapper>

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="mul.com.sns.dao.AddressDao">
+
+<!-- 유저의 주소 목록 보기 -->
+<select id="getAddress" parameterType="Integer" resultType="mul.com.sns.dto.AddressDto">
+	SELECT SEQ, USERID, ADDRESSNAME, ADDRESS, RECEIVEUSER, RECEIVEPHONE, DEF
+	FROM ADDRESS 
+	WHERE USERID = (SELECT SEQ FROM (SELECT SEQ FROM USER WHERE SEQ = #{seq}) A ) 
+</select>
+
+<!-- 유저의 주소 하나 불러오기 -->
+<select id="getAddressOne" parameterType="Integer" resultType="mul.com.sns.dto.AddressDto">
+	SELECT SEQ, USERID, ADDRESSNAME, ADDRESS, RECEIVEUSER, RECEIVEPHONE
+	FROM ADDRESS
+	WHERE SEQ=#{seq}
+</select>
+
+<!-- 유저의 주소명에 따라 주소 불러오기 -->
+<select id="getAddressName" parameterType="String" resultType="mul.com.sns.dto.AddressDto">
+	SELECT SEQ, USERID, ADDRESSNAME, ADDRESS, RECEIVEUSER, RECEIVEPHONE
+	FROM ADDRESS 
+	WHERE ADDRESSNAME = #{addressname}
+</select>
+
+
+<!-- 새 주소를 추가하기 -->
+<insert id="addAddress" parameterType="mul.com.sns.dto.AddressDto" >
+	INSERT INTO ADDRESS(USERID, ADDRESSNAME, ADDRESS, RECEIVEUSER, RECEIVEPHONE, DEF)
+	VALUES(#{userid}, #{addressname}, #{address}, #{receiveuser}, #{receivephone}, #{def} )
+</insert>
+
+<!-- 기존 주소를 수정하기 -->
+<update id="updateAddress" parameterType="mul.com.sns.dto.AddressDto" >
+	UPDATE ADDRESS
+	SET ADDRESSNAME=#{addressname}, ADDRESS=#{address}, RECEIVEUSER=#{receiveuser}, RECEIVEPHONE=#{receivephone}
+	WHERE SEQ=#{seq}
+</update>
+
+<!-- 선택한 주소를 삭제 -->
+<delete id="deleteAddress" parameterType="Integer">
+	DELETE FROM ADDRESS
+	WHERE SEQ = #{seq}
+</delete>
+
+<!-- 기본주소지 변경에 따른 테이블 수정 -->
+<update id="UpdateDefAddress" parameterType="mul.com.sns.dto.AddressDto">
+   UPDATE ADDRESS
+   SET DEF=FALSE
+   WHERE USERID=#{userid}
+</update>
+
+<select id="recentlyAddSeq" parameterType="mul.com.sns.dto.AddressDto" resultType="Integer">
+   SELECT MAX(SEQ)
+   FROM ADDRESS
+   WHERE USERID=#{userid}
+</select>
+
+</mapper>

@@ -4,57 +4,112 @@
 <mapper namespace="mul.com.sns.dao.CommentDao">
 
 <!-- 특정 게시물에 따라 댓글과 대댓글 불러오기 -->
-<select id="getComment" parameterType="Integer" resultType="mul.com.sns.dto.CommentDto">
-	SELECT * FROM COMMENT 
-	WHERE PHOTOID = (SELECT SEQ FROM (SELECT SEQ FROM PHOTO WHERE SEQ = #{seq}) A ) 
-	ORDER BY REF DESC, STEP ASC
+<select id="getComment" parameterType="mul.com.sns.dto.CommentDto" resultType="mul.com.sns.dto.CommentDto">
+	SELECT A.SEQ, A.USERID, A.PHOTOID, A.CONTENT, A.CDATE, A.PARENT,
+	(SELECT COUNT(*) FROM LIKES WHERE COMMENTID=A.SEQ) AS LIKECOUNT,
+	(SELECT IF(COUNT(*)=1,1,0) FROM LIKES WHERE COMMENTID=A.SEQ AND USERID=#{login}) AS ISLIKED,
+	(SELECT IF(COUNT(*)=1,1,0) FROM FOLLOW WHERE FOLLOW_GIVE=#{login} AND FOLLOW_RECV=A.USERID) AS ISFOLLOW,
+	(SELECT AVATAR FROM USER WHERE SEQ=A.USERID) AS AVATAR,	 
+	(SELECT NICKNAME FROM USER WHERE SEQ=A.USERID) AS NICKNAME	 
+	FROM COMMENT A
+	WHERE PHOTOID = #{photoid}
+	ORDER BY SEQ DESC
 </select>
 
-<!-- 특정 게시물의 댓글의 갯수(대댓글 포함) -->
-<select id="countComment" parameterType="mul.com.sns.dto.CommentDto" resultType="Integer">
-	SELECT COUNT(*) FROM COMMENT 
-	WHERE PHOTOID = (SELECT SEQ FROM (SELECT SEQ FROM PHOTO WHERE SEQ = #{seq}) A )
+<select id="getCommentsSeq" parameterType="Integer" resultType="Integer">
+	SELECT SEQ FROM COMMENT
+	WHERE PARENT = #{seq}
+	ORDER BY SEQ DESC
 </select>
 
-<!-- 특정 댓글이 가지는 대댓글의 갯수 -->
-<select id="countAnswerComment" parameterType="mul.com.sns.dto.CommentDto" resultType="Integer">
-	SELECT COUNT(*) FROM COMMENT 
-	WHERE REF = #{ref} AND STEP > 0
+<select id="getAllCommentsSeq" parameterType="Integer" resultType="Integer">
+	SELECT SEQ FROM COMMENT
+	WHERE PHOTOID = #{seq}
+	ORDER BY SEQ DESC
 </select>
+
 
 <!-- 특정 게시물에 댓글 추가하기 -->
 <insert id="addComment" parameterType="mul.com.sns.dto.CommentDto" >
-	INSERT INTO COMMENT(USERID, PHOTOID, CONTENT, REF, STEP, CDATE)
-	VALUES(#{userid}, #{photoid}, #{content}, (SELECT IFNULL(MAX(REF), 0) + 1 FROM COMMENT b), 0, NOW() )
+	INSERT INTO COMMENT(USERID, PHOTOID, CONTENT, CDATE)
+	VALUES(#{userid}, #{photoid}, #{content}, NOW() )
 </insert>
 
-<!-- 새 대댓글 추가하면 기존 대댓글의 스텝을 증가 -->
-<update id="stepAnswerComment" parameterType="Integer">
-	UPDATE COMMENT
-	SET STEP=STEP+1
-	WHERE REF=(SELECT REF FROM (SELECT REF FROM COMMENT A WHERE SEQ=#{seq}) A2)
-		AND STEP > (SELECT STEP FROM (SELECT STEP FROM COMMENT B WHERE SEQ=#{seq}) B2)
-</update>
 
 <!-- 특정 댓글에 대댓글 추가하기 -->
 <insert id="addAnswerComment" parameterType="mul.com.sns.dto.CommentDto" >
-	INSERT INTO COMMENT(USERID, PHOTOID, CONTENT, REF, STEP, CDATE)
-	VALUES(#{userid}, #{photoid}, #{content}, 
-			(SELECT REF FROM COMMENT A WHERE SEQ=#{seq}),
-			(SELECT STEP FROM COMMENT A WHERE SEQ=#{seq}) + 1,
-			 NOW() )
+	INSERT INTO COMMENT(USERID, PHOTOID, CONTENT, PARENT, CDATE, REFUSER)
+	VALUES(#{userid}, #{photoid}, #{content}, #{seq}, NOW(), #{refuser})
 </insert>
+
+<!-- 특정 게시물의 댓글 삭제 (대댓글도 함께 날림) -->
+<delete id="deleteAllComment" parameterType="Integer">
+	DELETE FROM COMMENT
+	WHERE PHOTOID = #{photoid}
+	ORDER BY SEQ DESC
+</delete>
 
 <!-- 특정 게시물의 댓글 삭제 (대댓글도 함께 날림) -->
 <delete id="deleteComment" parameterType="mul.com.sns.dto.CommentDto">
 	DELETE FROM COMMENT
+	WHERE SEQ = #{commentid}
+</delete>
+
+<!-- 댓글삭제전에 대댓글부터 날림 -->
+<delete id="deleteReply" parameterType="mul.com.sns.dto.CommentDto">
+	DELETE FROM COMMENT
+	WHERE PARENT = #{commentid}
+</delete>
+
+<!-- comment에 like총 수 -->
+<select id="getcommentLikes" parameterType="Integer" resultType="Integer">
+	SELECT COUNT(*)
+	FROM LIKES
+	WHERE COMMENTID=#{seq}
+</select>
+
+<!-- likes 비활성화된 부분을 누르면 추가 -->
+<insert id="addLikes" parameterType="mul.com.sns.dto.LikesDto">
+	INSERT INTO LIKES(USERID,COMMENTID)
+	VALUES(#{userid},#{commentid})
+</insert>
+
+<!-- likes 활성화된 부분을 누르면 삭제 -->
+<delete id="deleteLikes" parameterType="mul.com.sns.dto.LikesDto">
+	DELETE
+	FROM LIKES
+	WHERE COMMENTID=#{commentid} AND USERID=#{userid}
+</delete>
+
+<!-- likes 되어있는지 없는지 판단 -->
+<select id="serachLikes" parameterType="mul.com.sns.dto.LikesDto" resultType="Integer">
+	SELECT COUNT(*)
+	FROM LIKES
+	WHERE USERID=#{userid} AND COMMENTID=#{commentid}
+</select>
+
+<delete id="deleteAllLikes" parameterType="Integer">
+	DELETE
+	FROM LIKES
+	WHERE COMMENTID=#{commentid}
+</delete>
+
+<delete id="deleteReplyLikes" parameterType="Integer">
+	DELETE
+	FROM LIKES
+	WHERE COMMENTID = #{seq}
+</delete>
+
+<insert id="addProductComment" parameterType="mul.com.sns.dto.CommentDto">
+	INSERT INTO COMMENT(USERID, PRODUCTID, STAR, CONTENT, CDATE, FILE)
+	VALUES(#{userid},#{productid},#{star},#{content},NOW(),#{file})
+</insert>
+
+<delete id="deleteProductComment" parameterType="mul.com.sns.dto.CommentDto">
+	DELETE FROM COMMENT
 	WHERE SEQ = #{seq}
 </delete>
 
-<!-- 특정 게시물의 최신 댓글 몇개만 보여주기 -->
-<select id="getLatestComment" resultType="mul.com.sns.dto.CommentDto">
-	
-</select>
 
 </mapper>
 

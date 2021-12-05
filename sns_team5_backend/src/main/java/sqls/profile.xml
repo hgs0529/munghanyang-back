@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="mul.com.sns.dao.ProfileDao">
+
+<select id="getPetProfile" parameterType="Integer" resultType="mul.com.sns.dto.PetProfileDto">
+	SELECT SEQ, USERID, PHOTO, NEUTER, WEIGHT, NAME, BREED, GENDER, BIRTH, CONTENT
+	FROM ANIMALPROFILE
+	WHERE USERID=#{userid}
+</select>
+
+<insert id="addPetProfile" parameterType="mul.com.sns.dto.PetProfileDto">
+	INSERT INTO ANIMALPROFILE(USERID, PHOTO, NEUTER, WEIGHT, NAME, BREED, GENDER, BIRTH, CONTENT)
+	VALUES(#{userid}, #{photo}, #{neuter}, #{weight}, #{name}, #{breed}, #{gender}, #{birth}, #{content})
+</insert>
+
+<delete id="deletePetProfile" parameterType="Integer">
+	DELETE
+	FROM ANIMALPROFILE
+	WHERE SEQ = #{seq}
+</delete>
+</mapper>

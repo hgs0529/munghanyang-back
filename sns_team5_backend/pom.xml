@@ -133,7 +133,52 @@
 	          <artifactId>jackson-databind</artifactId>
 	          <version>2.10.1</version>
 	      </dependency>
-		
+	      
+	      <!-- mail smtp -->
+			<dependency>
+			    <groupId>javax.mail</groupId>
+			    <artifactId>mail</artifactId>
+			    <version>1.4.7</version>
+			</dependency>
+			
+			<dependency>
+			    <groupId>org.springframework</groupId>
+			    <artifactId>spring-context-support</artifactId>
+			</dependency>
+			
+			<dependency>
+			    <groupId>org.springframework.boot</groupId>
+			    <artifactId>spring-boot-starter-mail</artifactId>
+			</dependency>
+			
+			<!-- SNS login -->
+		    <dependency>
+			    <groupId>org.springframework.security</groupId>
+			    <artifactId>spring-security-oauth2-client</artifactId>
+		    </dependency>
+		    
+		    <dependency>
+			    <groupId>org.apache.httpcomponents</groupId>
+			    <artifactId>httpclient</artifactId>
+			</dependency>
+			
+		    <dependency>
+			    <groupId>org.springframework.security.oauth.boot</groupId>
+			    <artifactId>spring-security-oauth2-autoconfigure</artifactId>
+			    <version>2.5.6</version>
+			</dependency>
+			
+			<dependency>
+    		<groupId>org.json</groupId>
+    		<artifactId>json</artifactId>
+    		<version>20180813</version>
+		</dependency>
+		<dependency>
+			<groupId>net.morimekta.utils</groupId>
+			<artifactId>android-util</artifactId>
+			<version>2.7.1</version>
+		</dependency>
+			
 	</dependencies>
 
 	<build>

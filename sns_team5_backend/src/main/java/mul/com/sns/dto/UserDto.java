@@ -24,10 +24,11 @@ public class UserDto{
 	
 	String email;
 	String pwd;
+	boolean isfollow;
 	
 	String nickname;
 	
-	String created_at;
+	String cdate;
 	String avatar;
 	
 	int auth;
@@ -35,4 +36,7 @@ public class UserDto{
 	boolean sns_only;
 	
 	String token;
+	int mungpoint;
+	int followercount;
+	int followingcount;
 }

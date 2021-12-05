@@ -13,7 +13,7 @@ import mul.com.sns.dto.ChatDto;
 public interface ChatDao {
 	
 	List<ChatDto> getChatList(int userid);
-	int getChatId(ChatDto dto);
+	int getChatId(int userid);
 	List<ChatDto> getAllChatList();
 	int addChat(int seq);
 	int deleteChat(int seq);

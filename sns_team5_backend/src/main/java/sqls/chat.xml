@@ -4,8 +4,11 @@
 <mapper namespace="mul.com.sns.dao.ChatDao">
 
 <select id="getAllChatList" resultType="mul.com.sns.dto.ChatDto">
-	SELECT * 
-	FROM CHAT
+	SELECT A.SEQ, A.USERID, A.CDATE, 
+		 (SELECT AVATAR FROM USER WHERE SEQ = A.USERID) AVATAR,
+		 (SELECT NICKNAME FROM USER WHERE SEQ = A.USERID) NICKNAME
+	FROM CHAT A
+	ORDER BY CDATE DESC
 </select>
 
 <select id="getChatList" parameterType="Integer" resultType="mul.com.sns.dto.ChatDto">
@@ -19,16 +22,18 @@
 		 ORDER BY WDATE DESC LIMIT 1) RECENTMESSAGE
 	FROM CHAT A
 	WHERE USERID = #{userid}
+	ORDER BY CDATE DESC
 </select>
 
-<select id="getChatId" parameterType="mul.com.sns.dto.ChatDto" resultType="Integer">
+<select id="getChatId" parameterType="Integer" resultType="Integer">
 	SELECT SEQ
 	FROM CHAT 
-	WHERE AND USERID = #{userid}
+	WHERE USERID = #{userid}
+	ORDER BY CDATE DESC LIMIT 1
 </select>
 
 <insert id="addChat" parameterType="Integer">
-	INSERT INTO CHAT(USERID, CREATED_AT)
+	INSERT INTO CHAT(USERID, CDATE)
 	VALUES(#{userid}, NOW())
 </insert>
 
@@ -46,6 +51,7 @@
 	SELECT SEQ, USERID, CHATID, CONTENT, FILE, WDATE
 	FROM MESSAGE 
 	WHERE CHATID = #{seq}
+	ORDER BY WDATE ASC
 </select>
 
 <select id="getMessage" parameterType="Integer" resultType="mul.com.sns.dto.MessageDto">

@@ -21,8 +21,8 @@ public class ChatService {
 		return dao.getChatList(userid);
 	}
 	
-	public int getChatId(ChatDto dto) {
-		return dao.getChatId(dto);
+	public int getChatId(int userid) {
+		return dao.getChatId(userid);
 	}
 
 	public List<ChatDto> getAllChatList() {

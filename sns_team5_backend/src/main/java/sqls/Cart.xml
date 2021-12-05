@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="mul.com.sns.dao.CartDao">
+
+<!-- 유저의 장바구니 보기 (상품파일, 상품이름 가져오기 위해 이중쿼리 사용)-->
+<select id="getCart" parameterType="Integer" resultType="mul.com.sns.dto.CartDto">
+	SELECT A.SEQ, A.USERID, A.PRODUCTID, A.OPTIONS, A.QUANTITY, A.STATUS, 
+	(SELECT THUMBNAIL FROM PRODUCT WHERE SEQ=A.PRODUCTID) AS FILE, 
+	(SELECT NAME FROM PRODUCT WHERE SEQ=A.PRODUCTID) AS NAME,
+	(SELECT PRICE FROM PRODUCT WHERE SEQ=A.PRODUCTID) AS PRICE,
+	(SELECT DISCOUNT FROM PRODUCT WHERE SEQ=A.PRODUCTID) AS DISCOUNT,
+	(SELECT DEL FROM PRODUCT WHERE SEQ=A.PRODUCTID) AS DEL
+	FROM CART A
+	WHERE USERID = #{userid} 
+</select>
+
+<!-- 한 유저의 장바구니에서 체크된 물폼의 (가격*수량)값 -->
+<select id="getSum" parameterType="Integer" resultType="mul.com.sns.dto.CartDto">
+	SELECT SEQ, USERID, PRODUCTID, SELECTION, QUANTITY, STATUS, 
+	(SELECT THUMBNAIL FROM PRODUCT WHERE SEQ=PRODUCTID) AS FILE, 
+	(SELECT NAME FROM PRODUCT WHERE SEQ=PRODUCTID) AS NAME,
+	(SELECT PRICE FROM PRODUCT WHERE SEQ=PRODUCTID) AS PRICE, 
+	(SELECT DEL FROM PRODUCT WHERE SEQ=PRODUCTID) AS DEL,
+	SUM((SELECT PRICE FROM PRODUCT WHERE SEQ=PRODUCTID) * QUANTITY) AS SUMPRICE 
+	FROM CART 
+	WHERE USERID = (SELECT SEQ FROM (SELECT SEQ FROM USER WHERE SEQ = #{seq}) A )
+	  AND STATUS = 0 
+</select>
+
+<select id="getCheck" parameterType="Integer" resultType="mul.com.sns.dto.CartDto">
+	SELECT A.SEQ, A.USERID, A.PRODUCTID, A.OPTIONS, A.QUANTITY, A.STATUS, 
+	(SELECT THUMBNAIL FROM PRODUCT WHERE SEQ=A.PRODUCTID) AS FILE, 
+	(SELECT NAME FROM PRODUCT WHERE SEQ=A.PRODUCTID) AS NAME,
+	(SELECT PRICE FROM PRODUCT WHERE SEQ=A.PRODUCTID) AS PRICE,
+	(SELECT DISCOUNT FROM PRODUCT WHERE SEQ=A.PRODUCTID) AS DISCOUNT
+	FROM CART A 
+	WHERE A.USERID =#{userid} AND STATUS = 0
+</select>
+
+
+<!-- 유저의 장바구니 갯수보기 -->
+<select id="countCart" parameterType="mul.com.sns.dto.CartDto" resultType="Integer">
+	SELECT COUNT(*) FROM CART 
+	WHERE USERID = (SELECT SEQ FROM (SELECT SEQ FROM USER WHERE SEQ = #{seq}) A ) 
+</select>
+
+<!-- 장바구니에 추가하기 -->
+<insert id="addCart" parameterType="mul.com.sns.dto.CartDto" >
+	INSERT INTO CART(USERID, PRODUCTID, OPTIONS, QUANTITY, STATUS)
+	VALUES(#{userid}, #{productid}, #{options}, #{quantity}, 0 )
+</insert>
+
+<!-- 장바구니에서 상품수량 수정하기 -->
+<update id="updateCart" parameterType="mul.com.sns.dto.CartDto" >
+	UPDATE CART
+	SET QUANTITY=#{quantity}
+	WHERE SEQ=#{seq}
+</update>
+
+<!-- 한 유저의 장바구니에서 모두 체킹 -->
+<update id="allCheckCart" parameterType="Integer" >
+	UPDATE CART
+	SET STATUS = 0
+	WHERE USERID = (SELECT SEQ FROM (SELECT SEQ FROM USER WHERE SEQ = #{seq}) A )
+</update>
+
+<!-- 한 유저의 장바구니에서 모두 언체킹 -->
+<update id="allUncheckCart" parameterType="Integer" >
+	UPDATE CART
+	SET STATUS = 1
+	WHERE USERID = (SELECT SEQ FROM (SELECT SEQ FROM USER WHERE SEQ = #{seq}) A )
+</update>
+
+<!-- 장바구니에서 물품 체킹 -->
+<update id="checkCart" parameterType="mul.com.sns.dto.CartDto" >
+	UPDATE CART
+	SET STATUS = 0
+	WHERE SEQ=#{seq}
+</update>
+
+<!-- 장바구니에서 물품 체크해제하기 -->
+<update id="uncheckCart" parameterType="mul.com.sns.dto.CartDto" >
+	UPDATE CART
+	SET STATUS = 1
+	WHERE SEQ=#{seq}
+</update>
+
+<!-- 장바구니에서 버튼으로 삭제 -->
+<delete id="btnDelCart" parameterType="mul.com.sns.dto.CartDto">
+	DELETE FROM CART
+	WHERE SEQ =#{seq}
+</delete>
+
+<!-- 한 유저의 장바구니에서 체크된 물품만 삭제 -->
+<delete id="checkDelCart" parameterType="mul.com.sns.dto.CartDto">
+   DELETE FROM CART
+   WHERE USERID=#{userid} AND STATUS=0
+</delete>
+
+<!-- 한 유저의 장바구니에서 모든 물품 삭제 -->
+<delete id="allDelCart" parameterType="Integer">
+	DELETE FROM CART
+	WHERE USERID = (SELECT SEQ FROM (SELECT SEQ FROM USER WHERE SEQ = #{seq}) A )
+</delete>
+
+<select id="getimmediatelyPurchase" parameterType="mul.com.sns.dto.CartDto" resultType="mul.com.sns.dto.CartDto">
+	SELECT A.SEQ, A.USERID, A.PRODUCTID, A.OPTIONS, A.QUANTITY, A.STATUS, 
+	(SELECT THUMBNAIL FROM PRODUCT WHERE SEQ=A.PRODUCTID) AS FILE, 
+	(SELECT NAME FROM PRODUCT WHERE SEQ=A.PRODUCTID) AS NAME,
+	(SELECT PRICE FROM PRODUCT WHERE SEQ=A.PRODUCTID) AS PRICE,
+	(SELECT DISCOUNT FROM PRODUCT WHERE SEQ=A.PRODUCTID) AS DISCOUNT,
+	(SELECT DEL FROM PRODUCT WHERE SEQ=A.PRODUCTID) AS DEL
+	FROM CART A
+	WHERE A.USERID=#{userid} AND A.STATUS=0
+</select>
+
+
+<select id="getProductOption" parameterType="Integer" resultType="mul.com.sns.dto.ProductOptionDto">
+	SELECT SEQ, PRODUCTID, TITLE, SUBTITLE, OPTIONPRICE
+	FROM PRODUCT_OPTION
+	WHERE SEQ=#{seq}
+</select>
+
+<update id="UpdateQuantity" parameterType="mul.com.sns.dto.CartDto">
+	UPDATE CART
+	SET QUANTITY=#{quantity}
+	WHERE SEQ=#{seq}
+</update>
+
+<!-- 구매 후 장바구니 삭제 -->
+ <delete id="AfterDelCart" parameterType="mul.com.sns.dto.CartDto">
+   DELETE FROM CART
+   WHERE USERID=#{userid} AND STATUS=0
+</delete>
+
+</mapper>

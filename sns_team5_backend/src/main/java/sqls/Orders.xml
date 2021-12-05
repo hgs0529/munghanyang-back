@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="mul.com.sns.dao.OrdersDao">
+
+<!-- 유저 당 결제완료 목록 보기 -->
+<select id="getOrders" parameterType="Integer" resultType="mul.com.sns.dto.OrdersDto">
+	SELECT SEQ, USERID, ADDRESSID, PRODUCTAMOUNT, DELIVERYAMOUNT, USEMUNGPOINT, SAVEMUNGPOINT, TOTALAMOUNT,ORDERSTATUS,ORDERMESSAGE,ORDERDATE,ORDEREREMAIL, ORDERERNAME, ORDERERPHONE
+	FROM ORDERS
+	WHERE USERID=#{seq}
+	ORDER BY SEQ DESC
+</select>
+
+<!-- 결제완료 하나만 보기 -->
+<select id="getOrdersOne" parameterType="Integer" resultType="mul.com.sns.dto.OrdersDto">
+	SELECT SEQ, USERID, ADDRESSID, PRODUCTAMOUNT, DELIVERYAMOUNT, USEMUNGPOINT, SAVEMUNGPOINT, TOTALAMOUNT,ORDERSTATUS,ORDERMESSAGE,ORDERDATE,ORDEREREMAIL, ORDERERNAME, ORDERERPHONE
+	FROM ORDERS
+	WHERE SEQ=#{seq}
+</select>
+
+
+
+
+
+<insert id="addOrders" parameterType="mul.com.sns.dto.OrdersDto" >
+	INSERT INTO ORDERS(USERID, ADDRESSID, PRODUCTAMOUNT, DELIVERYAMOUNT, TOTALAMOUNT, USEMUNGPOINT, SAVEMUNGPOINT, ORDERSTATUS, ORDERMESSAGE, ORDERDATE, ORDEREREMAIL, ORDERERNAME, ORDERERPHONE)
+	VALUES(#{userid}, #{addressid}, #{productamount}, #{deliveryamount}, #{totalamount}, #{usemungpoint}, #{savemungpoint}, 0, #{ordermessage}, NOW() ,#{ordereremail}, #{orderername}, #{ordererphone})
+</insert>
+
+
+<!-- 결제 정보 수정 (미완성 이 기능 쓸까?) -->
+<update id="updateOrders" parameterType="mul.com.sns.dto.OrdersDto" >
+	UPDATE ORDERS
+	SET 
+	WHERE SEQ=#{seq}
+</update>
+
+<!-- 결제 정보 삭제 -->
+<delete id="deleteOrders" parameterType="Integer">
+	DELETE FROM ORDERS
+	WHERE SEQ = #{seq}
+</delete>
+
+<!-- 유저 포인트 적립 -->
+<update id="UpdateMungpoint" parameterType="mul.com.sns.dto.UserDto">
+   UPDATE USER
+   SET MUNGPOINT=MUNGPOINT+#{mungpoint}
+   WHERE SEQ=#{seq}
+</update>
+
+<select id="recentlyAddSeq" parameterType="mul.com.sns.dto.OrdersDto" resultType="Integer">
+   SELECT MAX(SEQ)
+   FROM ORDERS
+   WHERE USERID=#{userid}
+</select>
+
+
+</mapper>

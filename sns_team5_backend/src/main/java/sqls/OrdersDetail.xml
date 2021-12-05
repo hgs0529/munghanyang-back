@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="mul.com.sns.dao.OrdersDetailDao">
+
+<select id="getOrdersDetail" parameterType="Integer" resultType="mul.com.sns.dto.OrdersDetailDto">
+	SELECT SEQ, USERID, PRODUCTID, ORDERID, SELECTION, TOTALAMOUNT, QUANTITY,
+	(SELECT THUMBNAIL FROM PRODUCT WHERE SEQ=PRODUCTID) AS THUMBNAIL,
+	(SELECT NAME FROM PRODUCT WHERE SEQ=PRODUCTID) AS NAME
+	FROM ORDERS_DETAIL 
+	WHERE ORDERID = (SELECT A.SEQ FROM (SELECT SEQ FROM ORDERS WHERE SEQ = #{orderid}) A ) 
+</select>
+
+<!-- 구매한 목록 하나만 보기 -->
+<select id="getOrdersDetailOne" parameterType="Integer" resultType="mul.com.sns.dto.OrdersDetailDto">
+	SELECT SEQ, USERID, PRODUCTID, ORDERID, ADDRESSID, SELECTION, REVIEWSTATUS, 
+	(SELECT QUANTITY FROM ORDERS WHERE SEQ=ORDERID) AS QUANTITY,
+	(SELECT PRICE FROM ORDERS WHERE SEQ=ORDERID) AS PRICE,
+	(SELECT ORDERDATE FROM ORDERS WHERE SEQ=ORDERID) AS ORDERDATE,
+	(SELECT FILE FROM PRODUCT WHERE SEQ=PRODUCTID) AS FILE,
+	(SELECT NAME FROM PRODUCT WHERE SEQ=PRODUCTID) AS NAME,
+	(SELECT CONTENT FROM PRODUCT WHERE SEQ=PRODUCTID) AS CONTENT,
+	(SELECT ADDRESSNAME FROM ADDRESS WHERE SEQ=ADDRESSID) AS ADDRESSNAME,
+	(SELECT ADDRESS FROM ADDRESS WHERE SEQ=ADDRESSID) AS ADDRESS,
+	(SELECT RECEIVEUSER FROM ADDRESS WHERE SEQ=ADDRESSID) AS RECEIVEUSER,
+	(SELECT RECEIVEPHONE FROM ADDRESS WHERE SEQ=ADDRESSID) AS RECEIVEPHONE
+	FROM ORDERS_DETAIL 
+	WHERE SEQ=#{seq} 
+</select>
+
+<!-- (SELECT NICKNAME FROM SC_USER WHERE ID=USERID) AS NICKNAME
+
+CART table
+seq int primary key auto_increment,
+    userid int not null,
+    productid int not null,
+    selection varchar(50) not null,
+    quantity int not null,
+    status int not null,
+    FOREIGN KEY (productid) REFERENCES product (seq),
+    FOREIGN KEY (userid) REFERENCES user (seq)
+    
+    create table product(
+    seq int primary key auto_increment,
+    name varchar(50) not null,
+    content varchar(1000) not null,
+    price int not null,
+    del int not null,
+    discount int not null,
+    file varchar(1000) not null
+);
+
+create table user(
+    seq int primary key auto_increment,
+    email varchar(50) not null unique,
+    pwd varchar(60),
+    nickname varchar(50) not null unique,
+    cdate date not null,
+    mungpoint int not null,
+    avatar varchar(50),
+    sns_only boolean not null,
+    auth int not null
+); -->
+
+<!-- 구매목록 추가 -->
+<insert id="addOrdersDetail" parameterType="mul.com.sns.dto.OrdersDetailDto" >
+   INSERT INTO ORDERS_DETAIL(USERID,PRODUCTID, ORDERID,SELECTION ,QUANTITY , TOTALAMOUNT, ORDERDATE)
+   VALUES(#{userid} ,#{productid}, #{orderid}, #{selection},#{quantity}, #{totalamount}, NOW())
+</insert> 
+
+<!-- 구매목록 수정 (미완성 이 기능 쓸까?)-->
+<update id="updateOrdersDetail" parameterType="mul.com.sns.dto.OrdersDetailDto" >
+	UPDATE ORDERS_DETAIL
+	SET 
+	WHERE SEQ=#{seq}
+</update>
+
+<!-- 구매목록 삭제 -->
+<delete id="deleteOrdersDetail" parameterType="Integer">
+	DELETE FROM ORDERS_DETAIL
+	WHERE SEQ = #{seq}
+</delete>
+
+
+</mapper>

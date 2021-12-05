@@ -1,5 +1,4 @@
-# sns_final_team5-backend
-multicampus team5 final
+
 # 멍하냥 이커머스 플랫폼
 
 ### 프로젝트 협업 멤버

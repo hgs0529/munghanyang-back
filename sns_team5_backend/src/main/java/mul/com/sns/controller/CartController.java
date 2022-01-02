@@ -69,7 +69,7 @@ public class CartController {
 		System.out.println("CartController addCart POST()");
 		
 		String str = "";
-		if(!dto.getOptions().equals("")) {
+		if(!dto.getOptions.equals("")) {
 			String[] option = dto.getOptions().split("\\?");
 			for(int i=0; i<option.length; i++) {
 				ProductOptionDto pdto = service.getProductOption(Integer.parseInt(option[i]));
